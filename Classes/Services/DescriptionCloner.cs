@@ -2,6 +2,7 @@ using System.Text;
 using System.Text.Json;
 using TR.BBCode.Parser;
 using Unit3dDescriptionClone.Config;
+using Unit3dDescriptionClone.Models;
 using Unit3dDescriptionClone.Serialization;
 
 namespace Unit3dDescriptionClone.Services;
@@ -53,7 +54,22 @@ internal sealed class DescriptionCloner(
         Console.WriteLine($"Lookup file:  {lookupFile.Name}");
 
         Console.WriteLine("Searching for matching torrent on source tracker...");
-        var sourceTorrent = await api.FindSourceTorrentAsync(lookupFile.Name);
+        TorrentInfo? sourceTorrent;
+        if (!config.FromTrackerSupportsFileNameSearch)
+        {
+            var tmdbId = targetTorrent.Attributes.TmdbId;
+            if (tmdbId is null or 0)
+            {
+                Console.WriteLine("No TMDB ID on target torrent, cannot search source tracker by TMDB ID, aborting.");
+                return;
+            }
+            Console.WriteLine($"Source tracker does not support file_name search — searching by TMDB ID {tmdbId}...");
+            sourceTorrent = await api.FindSourceTorrentByTmdbIdAsync(tmdbId.Value, lookupFile.Name);
+        }
+        else
+        {
+            sourceTorrent = await api.FindSourceTorrentAsync(lookupFile.Name);
+        }
         if (sourceTorrent is null)
         {
             Console.WriteLine("No matching torrent found on source tracker, aborting.");

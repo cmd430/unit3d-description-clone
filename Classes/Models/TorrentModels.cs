@@ -13,6 +13,9 @@ internal sealed class TorrentAttributes
     public string Name { get; set; } = "";
     public string Description { get; set; } = "";
 
+    [JsonPropertyName("tmdb_id")]
+    public int? TmdbId { get; set; }
+
     [JsonPropertyName("media_info")]
     public string? MediaInfo { get; set; }
 

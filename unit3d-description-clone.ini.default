@@ -1,6 +1,9 @@
 [from_tracker]
 url = https://tracker.cc
 api_key = 
+; Set to true if the tracker supports the file_name filter parameter on /api/torrents/filter.
+; If false, torrents will be matched by TMDB ID instead.
+supports_file_name_search = true
 
 [to_tracker]
 url = https://tracker.org

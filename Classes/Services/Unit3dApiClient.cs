@@ -28,6 +28,25 @@ internal sealed class Unit3dApiClient(HttpClient client, AppConfig config)
         return result?.Data.FirstOrDefault();
     }
 
+    public async Task<TorrentInfo?> FindSourceTorrentByTmdbIdAsync(int tmdbId, string fileName)
+    {
+        var url = $"{config.FromTrackerUrl}/api/torrents/filter?tmdbId={tmdbId}";
+        var req = new HttpRequestMessage(HttpMethod.Get, url);
+        req.Headers.Authorization = new AuthenticationHeaderValue("Bearer", config.FromTrackerApiKey);
+        var resp = await client.SendAsync(req);
+        resp.EnsureSuccessStatusCode();
+        var result = await resp.Content.ReadFromJsonAsync(AppJsonContext.Default.TorrentsResponse);
+        var match = result?.Data.FirstOrDefault(d => d.Attributes.Files.Any(f => f.Name.Equals(fileName, StringComparison.OrdinalIgnoreCase)));
+        if (match is null)
+            return null;
+
+        var detailReq = new HttpRequestMessage(HttpMethod.Get, $"{config.FromTrackerUrl}/api/torrents/{match.Id}");
+        detailReq.Headers.Authorization = new AuthenticationHeaderValue("Bearer", config.FromTrackerApiKey);
+        var detailResp = await client.SendAsync(detailReq);
+        detailResp.EnsureSuccessStatusCode();
+        return await detailResp.Content.ReadFromJsonAsync(AppJsonContext.Default.TorrentInfo);
+    }
+
     public async Task<TorrentsResponse> GetTorrentsPageAsync(string url)
     {
         var resp = await SendWithRetryAsync(() =>

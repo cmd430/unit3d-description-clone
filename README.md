@@ -6,15 +6,41 @@ remain accessible on the target tracker.
 
 ## How it works
 
-1. Given a torrent ID on the target tracker, the tool looks up the first file in that
-   torrent and searches for a matching torrent on the source tracker by filename.
-2. The description is copied from the source torrent.
-3. Every image URL found in the BBCode description is downloaded and re-uploaded to
+1. Given a torrent ID on the target tracker, the tool fetches that torrent's metadata
+   from the target tracker API.
+2. It locates a matching torrent on the source tracker using one of two strategies
+   (see [Source tracker lookup](#source-tracker-lookup) below).
+3. The description is copied from the source torrent.
+4. Every image URL found in the BBCode description is downloaded and re-uploaded to
    the configured image host. SVG images are converted to PNG before uploading.
-4. Any text after the last image tag is stripped (credits, source-site footers, etc.).
-5. An optional `description_append.txt` file is appended to the final description.
-6. The tool logs in to the target tracker (caching the session in `cache/`), opens the
+5. Any text after the last image tag is stripped (credits, source-site footers, etc.).
+6. An optional `description_append.txt` file is appended to the final description.
+7. The tool logs in to the target tracker (caching the session in `cache/`), opens the
    torrent edit page, fills in the new description, and submits the form.
+
+## Source tracker lookup
+
+The tool supports two strategies for finding the matching torrent on the source tracker,
+controlled by the `supports_file_name_search` option in `[from_tracker]`.
+
+### File-name search (default)
+
+When `supports_file_name_search = true` (the default), the tool searches the source
+tracker's `/api/torrents/filter` endpoint using the `file_name` parameter, matching
+against the first file listed in the target torrent.
+
+### TMDB ID search
+
+When `supports_file_name_search = false`, the tool falls back to matching by TMDB ID.
+This is necessary for trackers that do not implement the `file_name` filter parameter.
+
+1. The TMDB ID is read from the target torrent's metadata.
+2. The source tracker's `/api/torrents/filter` endpoint is queried with the `tmdbId`
+   parameter.
+3. The first result's ID is used to fetch the full torrent record from
+   `/api/torrents/{id}`, which ensures the complete description is retrieved.
+
+If the target torrent has no TMDB ID the tool aborts with an error message.
 
 ## Requirements
 
@@ -35,6 +61,9 @@ cp unit3d-description-clone.ini.default unit3d-description-clone.ini
 [from_tracker]
 url = https://source-tracker.example
 api_key = <source API key>
+; Set to true if the tracker supports the file_name filter on /api/torrents/filter.
+; Set to false to match torrents by TMDB ID instead (required for some trackers).
+supports_file_name_search = true
 
 [to_tracker]
 url = https://target-tracker.example

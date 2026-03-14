@@ -3,6 +3,7 @@ namespace Unit3dDescriptionClone.Config;
 internal sealed record AppConfig(
     string FromTrackerUrl,
     string FromTrackerApiKey,
+    bool FromTrackerSupportsFileNameSearch,
     string ToTrackerUrl,
     string ToTrackerApiKey,
     string ToTrackerUsername,
@@ -25,6 +26,8 @@ internal sealed record AppConfig(
         return new AppConfig(
             FromTrackerUrl: from["url"],
             FromTrackerApiKey: from["api_key"],
+            FromTrackerSupportsFileNameSearch: from.TryGetValue("supports_file_name_search", out var sfns)
+                && sfns.Equals("true", StringComparison.OrdinalIgnoreCase),
             ToTrackerUrl: to["url"],
             ToTrackerApiKey: to["api_key"],
             ToTrackerUsername: to["username"],
