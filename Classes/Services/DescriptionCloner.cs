@@ -1,6 +1,6 @@
 using System.Text;
 using System.Text.Json;
-using TR.BBCode.Parser;
+using System.Text.RegularExpressions;
 using Unit3dDescriptionClone.Config;
 using Unit3dDescriptionClone.Models;
 using Unit3dDescriptionClone.Serialization;
@@ -82,7 +82,7 @@ internal sealed class DescriptionCloner(
         if (!await RehostImagesAsync(description))
             return;
 
-        TrimAfterLastImage(description);
+        //TrimAfterLastImage(description);
         AppendDescriptionSuffix(description);
 
         await web.EnsureLoggedInAsync();
@@ -91,19 +91,48 @@ internal sealed class DescriptionCloner(
 
     private async Task<bool> RehostImagesAsync(StringBuilder description)
     {
-        var bbcode = BBCodeParser.Parse(description.ToString());
-        var imgTags = bbcode.Where(p => p.Tags.ToList().Any(t => t.Name == "img")).ToList();
-        Console.WriteLine($"Found {imgTags.Count} image(s) to rehost...");
+        var str = description.ToString();
 
-        foreach (var imgTag in imgTags)
+        var urlWrappedImgRegex = new Regex(
+            @"\[url=(?<href>[^\]]*)\]\[img(?:=[^\]]*)?\](?<img>[^\[]*)\[/img\]\[/url\]",
+            RegexOptions.IgnoreCase);
+        var plainImgRegex = new Regex(
+            @"\[img(?:=[^\]]*)?\](?<img>[^\[]*)\[/img\]",
+            RegexOptions.IgnoreCase);
+        var comparisonRegex = new Regex(
+            @"\[comparison[^\]]*\](?<content>.*?)\[/comparison\]",
+            RegexOptions.IgnoreCase | RegexOptions.Singleline);
+        var urlRegex = new Regex(@"https?://\S+", RegexOptions.IgnoreCase);
+
+        var images = new List<(string ImgUrl, string? HrefUrl)>();
+
+        var urlWrappedMatches = urlWrappedImgRegex.Matches(str);
+        foreach (Match m in urlWrappedMatches)
+            images.Add((m.Groups["img"].Value, m.Groups["href"].Value));
+
+        var coveredRanges = urlWrappedMatches.Cast<Match>()
+            .Select(m => (Start: m.Index, End: m.Index + m.Length))
+            .ToList();
+
+        foreach (Match m in plainImgRegex.Matches(str))
         {
-            var imgUrl = imgTag.Content;
-            var href = imgTag.Tags.FirstOrDefault(t => t.Name == "url")?.Attributes[""];
+            if (!coveredRanges.Any(r => m.Index >= r.Start && m.Index < r.End))
+                images.Add((m.Groups["img"].Value, null));
+        }
 
+        foreach (Match m in comparisonRegex.Matches(str))
+            foreach (var sm in urlRegex.Matches(m.Groups["content"].Value).Select(u => u.Value))
+                images.Add((sm, null));
+
+        Console.WriteLine($"Found {images.Count} image(s) to rehost...");
+        foreach (var (imgUrl, hrefUrl) in images)
+        {
             if (config.KnownImages.TryGetValue(imgUrl, out var knownUrl))
             {
                 Console.WriteLine($"  Skipping (known): {imgUrl} -> {knownUrl}");
                 description.Replace(imgUrl, knownUrl);
+                if (hrefUrl is not null && hrefUrl != imgUrl)
+                    description.Replace(hrefUrl, knownUrl);
                 continue;
             }
 
@@ -112,8 +141,8 @@ internal sealed class DescriptionCloner(
                 return false;
 
             description.Replace(imgUrl, newUrl);
-            if (!string.IsNullOrEmpty(href))
-                description.Replace(href, newUrl);
+            if (hrefUrl is not null)
+                description.Replace(hrefUrl, newUrl);
         }
 
         return true;
@@ -122,17 +151,17 @@ internal sealed class DescriptionCloner(
     private static void TrimAfterLastImage(StringBuilder description)
     {
         var text = description.ToString();
-        var lastImgUrlClose = text.LastIndexOf("[/img][/url]", StringComparison.OrdinalIgnoreCase);
         var lastImgClose = text.LastIndexOf("[/img]", StringComparison.OrdinalIgnoreCase);
+        var lastImgUrlClose = text.LastIndexOf("[/img][/url]", StringComparison.OrdinalIgnoreCase);
 
-        if (lastImgUrlClose >= 0)
-        {
-            var cutAt = lastImgUrlClose + "[/img][/url]".Length;
-            description.Remove(cutAt, description.Length - cutAt);
-        }
-        else if (lastImgClose >= 0)
+        if (lastImgClose >= 0)
         {
             var cutAt = lastImgClose + "[/img]".Length;
+            description.Remove(cutAt, description.Length - cutAt);
+        }
+        else if (lastImgUrlClose >= 0)
+        {
+            var cutAt = lastImgUrlClose + "[/img][/url]".Length;
             description.Remove(cutAt, description.Length - cutAt);
         }
     }

@@ -75,7 +75,7 @@ totp_secret = <Base32-encoded TOTP secret, leave blank if 2FA is not enabled>
 
 [image_host]
 url = https://images.example
-api_key = <Chevereto API key>
+api_key = <Image host API key>
 
 ; Optional: map source image URLs directly to already-rehosted URLs.
 ; Useful when running the tool repeatedly and some images are already uploaded.
