@@ -25,7 +25,7 @@ controlled by the `supports_file_name_search` option in `[from_tracker]`.
 
 ### File-name search (default)
 
-When `supports_file_name_search = true` (the default), the tool searches the source
+When `supports_file_name_search = true` (the default — also applies when the option is omitted), the tool searches the source
 tracker's `/api/torrents/filter` endpoint using the `file_name` parameter, matching
 against the first file listed in the target torrent.
 
@@ -61,9 +61,10 @@ cp unit3d-description-clone.ini.default unit3d-description-clone.ini
 [from_tracker]
 url = https://source-tracker.example
 api_key = <source API key>
-; Set to true if the tracker supports the file_name filter on /api/torrents/filter.
-; Set to false to match torrents by TMDB ID instead (required for some trackers).
-supports_file_name_search = true
+; Optional. Set to false if the tracker does not support the file_name filter on
+; /api/torrents/filter. Torrents will then be matched by TMDB ID instead.
+; Defaults to true when omitted.
+; supports_file_name_search = false
 
 [to_tracker]
 url = https://target-tracker.example
