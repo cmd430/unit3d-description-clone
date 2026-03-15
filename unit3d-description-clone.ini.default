@@ -39,3 +39,9 @@ api_key =
 [known_images]
 ; https://imghost.com/img1.png = https://rehost.com/img.png
 ; https://imghost.com/img2.png = https://rehost.com/img.png
+
+; Optional: text to append to every description submitted to the target tracker.
+; Must be the last section in the file. All lines after the header are used verbatim —
+; blank lines and lines starting with ; are preserved.
+;[description_append]
+;Uploaded by Example.

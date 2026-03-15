@@ -17,7 +17,7 @@ remain accessible on the target tracker.
 6. Every image URL found in the BBCode description is downloaded and re-uploaded to
    the configured image host. SVG images are converted to PNG before uploading.
 7. Any text after the last image tag is stripped (credits, source-site footers, etc.).
-8. An optional `description_append.txt` file is appended to the final description.
+8. The optional `[description_append]` config section is appended to the final description.
 9. The tool logs in to the target tracker (caching the session in `cache/`), opens the
    torrent edit page, fills in the new description, and submits the form.
 
@@ -182,11 +182,17 @@ pattern = Created by L4G's Upload Assistant
 pattern = Uploaded with.*\bTool\b
 ```
 
-## Optional: description_append.txt
+## Optional: description_append
 
-If a file named `description_append.txt` exists in the working directory its contents
-are appended to every description that is submitted. Use it to add a standard footer
-or attribution note.
+The optional `[description_append]` section appends fixed text to every description that is
+submitted. Every line after the section header is used verbatim (blank lines and lines
+beginning with `;` are preserved as-is). Use it to add a standard footer or attribution note.
+
+```ini
+[description_append]
+Encoded and uploaded by Example.
+[url=https://example.com]example.com[/url]
+```
 
 ## Cache directory
 

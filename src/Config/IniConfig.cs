@@ -6,9 +6,19 @@ internal static class IniConfig
     {
         var result = new Dictionary<string, List<Dictionary<string, string>>>(StringComparer.OrdinalIgnoreCase);
         Dictionary<string, string>? currentSection = null;
+        bool inVerbatimSection = false;
 
         foreach (var rawLine in File.ReadAllLines(path))
         {
+            if (inVerbatimSection)
+            {
+                // All lines after [description_append] are captured verbatim.
+                currentSection!["_content"] = currentSection.TryGetValue("_content", out var verbatimExisting)
+                    ? verbatimExisting + "\n" + rawLine
+                    : rawLine;
+                continue;
+            }
+
             var line = rawLine.Trim();
             if (line.Length == 0 || line[0] is ';' or '#')
                 continue;
@@ -20,6 +30,8 @@ internal static class IniConfig
                 if (!result.TryGetValue(sectionName, out var list))
                     result[sectionName] = list = [];
                 list.Add(currentSection);
+                if (sectionName.Equals("description_append", StringComparison.OrdinalIgnoreCase))
+                    inVerbatimSection = true;
                 continue;
             }
 

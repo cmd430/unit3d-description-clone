@@ -18,7 +18,8 @@ internal sealed record AppConfig(
     string ImageHostUrl,
     string ImageHostApiKey,
     IReadOnlyDictionary<string, string> KnownImages,
-    IReadOnlyList<Regex> StripLinePatterns)
+    IReadOnlyList<Regex> StripLinePatterns,
+    string DescriptionAppend)
 {
     public FromTrackerConfig? GetFromTrackerForTorrent(string torrentName) =>
         FromTrackers.FirstOrDefault(ft =>
@@ -50,6 +51,11 @@ internal sealed record AppConfig(
                     : []))]
             : [];
 
+        string descriptionAppend = cfg.TryGetValue("description_append", out var da)
+            && da[0].TryGetValue("_content", out var daContent)
+            ? daContent.TrimEnd()
+            : "";
+
         return new AppConfig(
             FromTrackers: fromTrackers,
             ToTrackerUrl: to["url"],
@@ -60,6 +66,7 @@ internal sealed record AppConfig(
             ImageHostUrl: img["url"],
             ImageHostApiKey: img["api_key"],
             KnownImages: knownImages,
-            StripLinePatterns: stripLinePatterns);
+            StripLinePatterns: stripLinePatterns,
+            DescriptionAppend: descriptionAppend);
     }
 }

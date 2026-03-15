@@ -170,13 +170,13 @@ internal sealed class DescriptionCloner(
         return true;
     }
 
-    private static void AppendDescriptionSuffix(StringBuilder description)
+    private void AppendDescriptionSuffix(StringBuilder description)
     {
-        if (!File.Exists("description_append.txt"))
+        if (string.IsNullOrEmpty(config.DescriptionAppend))
             return;
 
         description.AppendLine();
-        description.Append(File.ReadAllText("description_append.txt"));
+        description.Append(config.DescriptionAppend);
     }
 
     private async Task SubmitEditAsync(string torrentId, string description, string? mediaInfo)
