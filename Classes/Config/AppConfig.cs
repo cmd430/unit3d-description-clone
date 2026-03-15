@@ -1,9 +1,13 @@
 namespace Unit3dDescriptionClone.Config;
 
+internal sealed record FromTrackerConfig(
+    string Url,
+    string ApiKey,
+    bool SupportsFileNameSearch,
+    IReadOnlyList<string> ReleaseGroups);
+
 internal sealed record AppConfig(
-    string FromTrackerUrl,
-    string FromTrackerApiKey,
-    bool FromTrackerSupportsFileNameSearch,
+    IReadOnlyList<FromTrackerConfig> FromTrackers,
     string ToTrackerUrl,
     string ToTrackerApiKey,
     string ToTrackerUsername,
@@ -13,21 +17,32 @@ internal sealed record AppConfig(
     string ImageHostApiKey,
     IReadOnlyDictionary<string, string> KnownImages)
 {
+    public FromTrackerConfig? GetFromTrackerForTorrent(string torrentName) =>
+        FromTrackers.FirstOrDefault(ft =>
+            ft.ReleaseGroups.Any(rg => torrentName.Contains(rg, StringComparison.OrdinalIgnoreCase)));
+
     public static AppConfig Load(string path)
     {
         var cfg = IniConfig.Load(path);
-        var from = cfg["from_tracker"];
-        var to = cfg["to_tracker"];
-        var img = cfg["image_host"];
+        var to = cfg["to_tracker"][0];
+        var img = cfg["image_host"][0];
         var knownImages = cfg.TryGetValue("known_images", out var ki)
-            ? (IReadOnlyDictionary<string, string>)ki
+            ? (IReadOnlyDictionary<string, string>)ki[0]
             : new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
 
+        List<FromTrackerConfig> fromTrackers = cfg.TryGetValue("from_tracker", out var fromSections)
+            ? [.. fromSections.Select(from => new FromTrackerConfig(
+                Url: from["url"],
+                ApiKey: from["api_key"],
+                SupportsFileNameSearch: !from.TryGetValue("supports_file_name_search", out var sfns)
+                    || sfns.Equals("true", StringComparison.OrdinalIgnoreCase),
+                ReleaseGroups: from.TryGetValue("release_group", out var rg)
+                    ? rg.Split('\n', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+                    : []))]
+            : [];
+
         return new AppConfig(
-            FromTrackerUrl: from["url"],
-            FromTrackerApiKey: from["api_key"],
-            FromTrackerSupportsFileNameSearch: !from.TryGetValue("supports_file_name_search", out var sfns)
-                || sfns.Equals("true", StringComparison.OrdinalIgnoreCase),
+            FromTrackers: fromTrackers,
             ToTrackerUrl: to["url"],
             ToTrackerApiKey: to["api_key"],
             ToTrackerUsername: to["username"],

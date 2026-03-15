@@ -2,10 +2,10 @@ namespace Unit3dDescriptionClone.Config;
 
 internal static class IniConfig
 {
-    public static Dictionary<string, Dictionary<string, string>> Load(string path)
+    public static Dictionary<string, List<Dictionary<string, string>>> Load(string path)
     {
-        var result = new Dictionary<string, Dictionary<string, string>>(StringComparer.OrdinalIgnoreCase);
-        var section = "";
+        var result = new Dictionary<string, List<Dictionary<string, string>>>(StringComparer.OrdinalIgnoreCase);
+        Dictionary<string, string>? currentSection = null;
 
         foreach (var rawLine in File.ReadAllLines(path))
         {
@@ -15,16 +15,23 @@ internal static class IniConfig
 
             if (line[0] == '[' && line[^1] == ']')
             {
-                section = line[1..^1].Trim();
-                result.TryAdd(section, new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase));
+                var sectionName = line[1..^1].Trim();
+                currentSection = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+                if (!result.TryGetValue(sectionName, out var list))
+                    result[sectionName] = list = [];
+                list.Add(currentSection);
                 continue;
             }
 
             var eq = line.IndexOf('=');
-            if (eq <= 0 || section.Length == 0)
+            if (eq <= 0 || currentSection is null)
                 continue;
 
-            result[section][line[..eq].Trim()] = line[(eq + 1)..].Trim();
+            var key = line[..eq].Trim();
+            var val = line[(eq + 1)..].Trim();
+            currentSection[key] = currentSection.TryGetValue(key, out var existing)
+                ? existing + "\n" + val
+                : val;
         }
 
         return result;

@@ -8,15 +8,41 @@ remain accessible on the target tracker.
 
 1. Given a torrent ID on the target tracker, the tool fetches that torrent's metadata
    from the target tracker API.
-2. It locates a matching torrent on the source tracker using one of two strategies
+2. The torrent name is matched against the `release_group` values of each `[from_tracker]`
+   section to select the appropriate source tracker.
+3. It locates a matching torrent on the selected source tracker using one of two strategies
    (see [Source tracker lookup](#source-tracker-lookup) below).
-3. The description is copied from the source torrent.
-4. Every image URL found in the BBCode description is downloaded and re-uploaded to
+4. The description is copied from the source torrent.
+5. Every image URL found in the BBCode description is downloaded and re-uploaded to
    the configured image host. SVG images are converted to PNG before uploading.
-5. Any text after the last image tag is stripped (credits, source-site footers, etc.).
-6. An optional `description_append.txt` file is appended to the final description.
-7. The tool logs in to the target tracker (caching the session in `cache/`), opens the
+6. Any text after the last image tag is stripped (credits, source-site footers, etc.).
+7. An optional `description_append.txt` file is appended to the final description.
+8. The tool logs in to the target tracker (caching the session in `cache/`), opens the
    torrent edit page, fills in the new description, and submits the form.
+
+## Source tracker selection
+
+Multiple `[from_tracker]` sections can be defined in the config file, each covering one
+or more release groups. When processing a torrent, the tool checks the torrent name
+against the `release_group` values of each section in order, and uses the first section
+that matches. The match is a case-insensitive substring search.
+
+Each `[from_tracker]` section can list one or more `release_group` entries:
+
+```ini
+[from_tracker]
+url = https://source1.example
+api_key = <key>
+release_group = GroupA
+release_group = GroupB
+
+[from_tracker]
+url = https://source2.example
+api_key = <key>
+release_group = GroupC
+```
+
+If no `[from_tracker]` section matches the torrent name, the tool aborts with an error message.
 
 ## Source tracker lookup
 
@@ -61,10 +87,20 @@ cp unit3d-description-clone.ini.default unit3d-description-clone.ini
 [from_tracker]
 url = https://source-tracker.example
 api_key = <source API key>
+; One or more release group names (repeated keys). The torrent name is checked for a
+; case-insensitive substring match against each value. The first matching section is used.
+release_group = GroupA
+release_group = GroupB
 ; Optional. Set to false if the tracker does not support the file_name filter on
 ; /api/torrents/filter. Torrents will then be matched by TMDB ID instead.
 ; Defaults to true when omitted.
 ; supports_file_name_search = false
+
+; Additional [from_tracker] sections can be added for other source trackers.
+;[from_tracker]
+;url = https://source-tracker2.example
+;api_key = <source API key>
+;release_group = GroupC
 
 [to_tracker]
 url = https://target-tracker.example

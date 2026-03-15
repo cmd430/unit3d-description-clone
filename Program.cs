@@ -13,8 +13,6 @@ if (args.Length == 0 || (args[0] == "backfill" && args.Length < 2))
 }
 
 var config = AppConfig.Load("unit3d-description-clone.ini");
-Console.WriteLine($"  Source: {config.FromTrackerUrl}");
-Console.WriteLine($"  Target: {config.ToTrackerUrl}");
 
 var cookies = CookieStore.Load("cache/target-cookies.json", config.ToTrackerUrl);
 using var noRedirectClient = HttpClientFactory.Create(cookies, followRedirects: false);

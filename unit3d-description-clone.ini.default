@@ -4,6 +4,16 @@ api_key =
 ; Set to true if the tracker supports the file_name filter parameter on /api/torrents/filter.
 ; If false, torrents will be matched by TMDB ID instead.
 supports_file_name_search = true
+; One or more release group names. Used to select this tracker for a given torrent.
+release_group = GROUP-A
+release_group = GROUP-B
+
+; Add more [from_tracker] sections to support additional source trackers.
+; The first section whose release_group matches the target torrent name will be used.
+;[from_tracker]
+;url = https://tracker2.cc
+;api_key =
+;release_group = GROUP-C
 
 [to_tracker]
 url = https://tracker.org

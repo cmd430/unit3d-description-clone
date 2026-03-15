@@ -53,9 +53,17 @@ internal sealed class DescriptionCloner(
         Console.WriteLine($"Torrent name: {targetTorrent.Attributes.Name}");
         Console.WriteLine($"Lookup file:  {lookupFile.Name}");
 
+        var fromTracker = config.GetFromTrackerForTorrent(targetTorrent.Attributes.Name);
+        if (fromTracker is null)
+        {
+            Console.WriteLine("No matching [from_tracker] found for this torrent name, aborting.");
+            return;
+        }
+        Console.WriteLine($"Using source tracker: {fromTracker.Url}");
+
         Console.WriteLine("Searching for matching torrent on source tracker...");
         TorrentInfo? sourceTorrent;
-        if (!config.FromTrackerSupportsFileNameSearch)
+        if (!fromTracker.SupportsFileNameSearch)
         {
             var tmdbId = targetTorrent.Attributes.TmdbId;
             if (tmdbId is null or 0)
@@ -64,11 +72,11 @@ internal sealed class DescriptionCloner(
                 return;
             }
             Console.WriteLine($"Source tracker does not support file_name search — searching by TMDB ID {tmdbId}...");
-            sourceTorrent = await api.FindSourceTorrentByTmdbIdAsync(tmdbId.Value, lookupFile.Name);
+            sourceTorrent = await api.FindSourceTorrentByTmdbIdAsync(tmdbId.Value, lookupFile.Name, fromTracker);
         }
         else
         {
-            sourceTorrent = await api.FindSourceTorrentAsync(lookupFile.Name);
+            sourceTorrent = await api.FindSourceTorrentAsync(lookupFile.Name, fromTracker);
         }
         if (sourceTorrent is null)
         {
