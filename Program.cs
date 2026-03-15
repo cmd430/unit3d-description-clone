@@ -4,11 +4,11 @@ using Unit3dDescriptionClone.Services;
 
 Directory.CreateDirectory("cache");
 
-if (args.Length == 0 || (args[0] == "backfill" && args.Length < 2))
+if (args.Length == 0 || (args[0] == "backfill" && args.Length < 3))
 {
     Console.Error.WriteLine("Usage:");
     Console.Error.WriteLine("  unit3d-description-clone <torrent-id>");
-    Console.Error.WriteLine("  unit3d-description-clone backfill <release-group>");
+    Console.Error.WriteLine("  unit3d-description-clone backfill <release-group> <uploader>");
     return 1;
 }
 
@@ -24,7 +24,7 @@ var imageRehoster = new ImageRehoster(autoRedirectClient, config);
 var cloner = new DescriptionCloner(api, web, imageRehoster, config);
 
 if (args[0] == "backfill")
-    await cloner.BackfillAsync(args[1]);
+    await cloner.BackfillAsync(args[1], args[2]);
 else
     await cloner.CloneAsync(args[0]);
 

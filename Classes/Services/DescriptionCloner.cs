@@ -15,11 +15,11 @@ internal sealed class DescriptionCloner(
 {
     private const string CacheDir = "cache";
 
-    public async Task BackfillAsync(string releaseGroup)
+    public async Task BackfillAsync(string releaseGroup, string uploader)
     {
-        Console.WriteLine($"Backfilling description for release group: {releaseGroup}");
+        Console.WriteLine($"Backfilling description for release group: {releaseGroup}, uploader: {uploader}");
         string? nextUrl = $"{config.ToTrackerUrl}/api/torrents/filter" +
-            $"?name={Uri.EscapeDataString(releaseGroup)}&sortField=created_at&sortDirection=asc";
+            $"?name={Uri.EscapeDataString(releaseGroup)}&uploader={Uri.EscapeDataString(uploader)}&sortField=created_at&sortDirection=asc";
 
         while (nextUrl is not null)
         {

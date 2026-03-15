@@ -153,13 +153,13 @@ Clone a single torrent description by its ID on the target tracker:
 unit3d-description-clone <torrent-id>
 ```
 
-Backfill all torrents on the target tracker whose name matches a release group:
+Backfill all torrents on the target tracker whose name matches a release group, uploaded by a specific user:
 
 ```
-unit3d-description-clone backfill "<release group name>"
+unit3d-description-clone backfill "<release group name>" "<uploader username>"
 ```
 
-In backfill mode the tool paginates through all matching results and processes each
+In backfill mode the tool filters the target tracker by both torrent name and uploader, paginates through all matching results and processes each
 torrent. A JSON file is written to `cache/<id>.json` once a torrent is processed so
 that subsequent runs skip it.
 
