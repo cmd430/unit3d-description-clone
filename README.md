@@ -4,10 +4,6 @@ Copies torrent descriptions from one tracker to another. Images embedded in the
 description are automatically rehosted to a compatible image host so they
 remain accessible on the target tracker.
 
-Supported source tracker APIs:
-- **UNIT3D** — standard UNIT3D REST API
-- **F3NIX** — F3NIX-style POST API
-
 ## How it works
 
 1. Given a torrent ID on the target tracker, the tool fetches that torrent's metadata
@@ -24,42 +20,6 @@ Supported source tracker APIs:
 7. The optional `[description_append]` config section is appended to the final description.
 8. The tool logs in to the target tracker (caching the session in `cache/`), opens the
    torrent edit page, fills in the new description, and submits the form.
-
-## Source tracker selection
-
-Multiple `[from_tracker]` sections can be defined in the config file, each covering one
-or more release groups. When processing a torrent, the tool checks the torrent name
-against the `release_group` values of each section in order, and uses the first section
-that matches. The match is a case-insensitive substring search.
-
-Each `[from_tracker]` section can list one or more `release_group` entries and optionally
-specify the tracker `type` (defaults to UNIT3D):
-
-```ini
-[from_tracker]
-url = https://source1.example
-api_key = <key>
-type = UNIT3D
-release_group = GroupA
-release_group = GroupB
-
-[from_tracker]
-url = https://source2.example
-api_key = <key>
-type = F3NIX
-release_group = GroupC
-```
-
-The `type` key is optional and defaults to `UNIT3D` when omitted.
-
-If no `[from_tracker]` section matches the torrent name, the tool aborts with an error message.
-
-## Requirements
-
-- .NET 10 SDK or later
-- A source tracker with API access (UNIT3D or F3NIX)
-- A UNIT3D target tracker with API access and a user account with torrent modification privileges
-- A compatible image host with API access
 
 ## Configuration
 
@@ -120,20 +80,6 @@ api_key = <Image host API key>
 ;Encoded and uploaded by Example.
 ;[url=https://example.com]example.com[/url]
 ```
-
-## Building
-
-```
-dotnet build src/
-```
-
-To produce a self-contained single-file binary for Linux x64:
-
-```
-dotnet publish src/ -c Release -r linux-x64
-```
-
-The output is placed in `publish/`.
 
 ## Usage
 
