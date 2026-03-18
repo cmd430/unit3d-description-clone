@@ -1,6 +1,7 @@
 using System.Text;
 using System.Text.Json;
 using System.Text.RegularExpressions;
+using System.Web;
 using Unit3dDescriptionClone.Config;
 using Unit3dDescriptionClone.Models;
 using Unit3dDescriptionClone.Serialization;
@@ -190,6 +191,14 @@ internal sealed class DescriptionCloner(
         if (!string.IsNullOrEmpty(mediaInfo) &&
             string.IsNullOrWhiteSpace(editForm.Fields.GetValueOrDefault("mediainfo")))
             editForm.Fields["mediainfo"] = mediaInfo;
+
+        var formMediaInfo = editForm.Fields.GetValueOrDefault("mediainfo") ?? "";
+        string decodedMediaInfo;
+        while ((decodedMediaInfo = HttpUtility.HtmlDecode(formMediaInfo)) != formMediaInfo)
+            formMediaInfo = decodedMediaInfo;
+
+        if (!string.IsNullOrWhiteSpace(formMediaInfo))
+            editForm.Fields["mediainfo"] = formMediaInfo;
 
         RemoveNonExistentExternalIds(editForm.Fields, editForm.AlpineExists);
         editForm.Fields.Remove("_token");
