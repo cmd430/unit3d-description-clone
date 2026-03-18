@@ -54,38 +54,6 @@ The `type` key is optional and defaults to `UNIT3D` when omitted.
 
 If no `[from_tracker]` section matches the torrent name, the tool aborts with an error message.
 
-## Source tracker lookup
-
-The tool supports two strategies for finding the matching torrent on the source tracker,
-controlled by the `supports_file_name_search` option in `[from_tracker]`.
-
-### File-name search (default)
-
-When `supports_file_name_search = true` (the default — also applies when the option is omitted):
-
-- **UNIT3D**: searches `/api/torrents/filter?file_name=…` using the first file listed in the target torrent.
-- **F3NIX**: POSTs `action=search` with `file_name=…` to the API endpoint.
-
-### TMDB ID search
-
-When `supports_file_name_search = false`, the tool falls back to matching by TMDB ID.
-This is necessary for trackers that do not implement the `file_name` filter parameter.
-
-**UNIT3D:**
-1. The TMDB ID is read from the target torrent's metadata.
-2. The source tracker's `/api/torrents/filter` endpoint is queried with the `tmdbId`
-   parameter.
-3. The first result's ID is used to fetch the full torrent record from
-   `/api/torrents/{id}`, which ensures the complete description is retrieved.
-
-**F3NIX:**
-1. The TMDB ID is read from the target torrent's metadata.
-2. The API is POSTed with `action=search` and `tmdb_id=movie/{id}` (then `tv/{id}` if
-   the first attempt returns no results).
-3. The matching torrent's ID is used to fetch full details via `action=details`.
-
-If the target torrent has no TMDB ID the tool aborts with an error message.
-
 ## Requirements
 
 - .NET 10 SDK or later
