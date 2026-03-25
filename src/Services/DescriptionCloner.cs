@@ -101,7 +101,7 @@ internal sealed class DescriptionCloner(
         AppendDescriptionSuffix(description);
 
         await web.EnsureLoggedInAsync();
-        await SubmitEditAsync(torrentId, description.ToString(), mediaInfo);
+        await SubmitEditAsync(torrentId, description.ToString(), mediaInfo, targetTorrent.Attributes.Description);
     }
 
     private void StripLines(StringBuilder description)
@@ -187,7 +187,7 @@ internal sealed class DescriptionCloner(
         description.Append(config.DescriptionAppend);
     }
 
-    private async Task SubmitEditAsync(string torrentId, string description, string? mediaInfo)
+    private async Task SubmitEditAsync(string torrentId, string description, string? mediaInfo, string oldTargetDescription)
     {
         var editPageUrl = $"{config.ToTrackerUrl}/torrents/{torrentId}/edit";
         Console.WriteLine($"Fetching edit page for torrent {torrentId}...");
@@ -200,7 +200,26 @@ internal sealed class DescriptionCloner(
         description = description.Replace("[hide", "[spoiler", StringComparison.OrdinalIgnoreCase);
         description = description.Replace("[/hide]", "[/spoiler]", StringComparison.OrdinalIgnoreCase);
 
+
+        var wrappedSpoilerTag = "[spoiler=original info]";
+        string? originalDescriptionSpoiler = null;
+        if (oldTargetDescription.Contains(wrappedSpoilerTag, StringComparison.OrdinalIgnoreCase))
+        {
+            var lastEndTagIndex = oldTargetDescription.LastIndexOf("[/spoiler]", StringComparison.OrdinalIgnoreCase);
+            var startTagIndex = oldTargetDescription.LastIndexOf(wrappedSpoilerTag, lastEndTagIndex, StringComparison.OrdinalIgnoreCase);
+            if (startTagIndex >= 0 && lastEndTagIndex > startTagIndex)
+            {
+                var removeLength = lastEndTagIndex + "[/spoiler]".Length - startTagIndex;
+                originalDescriptionSpoiler = oldTargetDescription.Substring(startTagIndex, removeLength);
+                oldTargetDescription = oldTargetDescription.Remove(startTagIndex, removeLength);
+            }
+        }
+        else if (!string.IsNullOrWhiteSpace(oldTargetDescription))
+            originalDescriptionSpoiler = $"{wrappedSpoilerTag}{oldTargetDescription}[/spoiler]";
+
         editForm.Fields["description"] = $"[code]{description}[/code]";
+        if (originalDescriptionSpoiler is not null)
+            editForm.Fields["description"] += originalDescriptionSpoiler;
         if (!string.IsNullOrEmpty(mediaInfo) &&
             string.IsNullOrWhiteSpace(editForm.Fields.GetValueOrDefault("mediainfo")))
             editForm.Fields["mediainfo"] = mediaInfo;
