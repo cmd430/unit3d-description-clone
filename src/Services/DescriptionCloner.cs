@@ -152,6 +152,8 @@ internal sealed class DescriptionCloner(
             foreach (var sm in urlRegex.Matches(m.Groups["content"].Value).Select(u => u.Value))
                 images.Add((sm, null));
 
+        images = [.. images.Where(i => !i.ImgUrl.Contains(config.ImageHostUrl, StringComparison.OrdinalIgnoreCase))];
+
         Console.WriteLine($"Found {images.Count} image(s) to rehost...");
         foreach (var (imgUrl, hrefUrl) in images)
         {
