@@ -200,6 +200,7 @@ internal sealed class DescriptionCloner(
         description = description.Replace("[hide", "[spoiler", StringComparison.OrdinalIgnoreCase);
         description = description.Replace("[/hide]", "[/spoiler]", StringComparison.OrdinalIgnoreCase);
 
+        description = ReplaceAlignTags(description);
 
         var wrappedSpoilerTag = "[spoiler=original info]";
         string? originalDescriptionSpoiler = null;
@@ -253,6 +254,46 @@ internal sealed class DescriptionCloner(
         var patchResp = await web.SubmitEditFormAsync(torrentId, editPageUrl, patchData);
         Console.WriteLine(
             $"Patch response: {(int)patchResp.StatusCode} {patchResp.StatusCode} -> {patchResp.Headers.Location}");
+    }
+
+    private static readonly HashSet<string> KnownAlignValues =
+        new(StringComparer.OrdinalIgnoreCase) { "left", "center", "right" };
+
+    private static string ReplaceAlignTags(string text)
+    {
+        var tagRegex = new Regex(@"\[align=(?<val>[^\]]+)\]|\[/align\]", RegexOptions.IgnoreCase);
+        var matches = tagRegex.Matches(text);
+        var stack = new Stack<(int Index, int Length, string Value)>();
+        var replacements = new List<(int Index, int Length, string Replacement)>();
+
+        foreach (Match m in matches)
+        {
+            if (m.Groups["val"].Success)
+            {
+                stack.Push((m.Index, m.Length, m.Groups["val"].Value));
+            }
+            else if (stack.Count > 0)
+            {
+                var (openIndex, openLen, openVal) = stack.Pop();
+                if (KnownAlignValues.Contains(openVal))
+                {
+                    var tag = openVal.ToLowerInvariant();
+                    replacements.Add((openIndex, openLen, $"[{tag}]"));
+                    replacements.Add((m.Index, m.Length, $"[/{tag}]"));
+                }
+            }
+        }
+
+        if (replacements.Count == 0)
+            return text;
+
+        var sb = new StringBuilder(text);
+        foreach (var (index, length, replacement) in replacements.OrderByDescending(r => r.Index))
+        {
+            sb.Remove(index, length);
+            sb.Insert(index, replacement);
+        }
+        return sb.ToString();
     }
 
     private static void RemoveNonExistentExternalIds(
