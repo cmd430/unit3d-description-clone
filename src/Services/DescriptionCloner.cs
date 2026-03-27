@@ -233,13 +233,13 @@ internal sealed class DescriptionCloner(
             string.IsNullOrWhiteSpace(editForm.Fields.GetValueOrDefault("mediainfo")))
             editForm.Fields["mediainfo"] = mediaInfo;
 
-        var formMediaInfo = editForm.Fields.GetValueOrDefault("mediainfo") ?? "";
-        string decodedMediaInfo;
-        while ((decodedMediaInfo = HttpUtility.HtmlDecode(formMediaInfo)) != formMediaInfo)
-            formMediaInfo = decodedMediaInfo;
-
+        var formMediaInfo = LayeredHtmlDecode(editForm.Fields.GetValueOrDefault("mediainfo") ?? "");
         if (!string.IsNullOrWhiteSpace(formMediaInfo))
             editForm.Fields["mediainfo"] = formMediaInfo;
+
+        var formName = LayeredHtmlDecode(editForm.Fields.GetValueOrDefault("name") ?? "");
+        if (!string.IsNullOrWhiteSpace(formName))
+            editForm.Fields["name"] = formName;
 
         RemoveNonExistentExternalIds(editForm.Fields, editForm.AlpineExists);
         editForm.Fields.Remove("_token");
@@ -262,6 +262,14 @@ internal sealed class DescriptionCloner(
         var patchResp = await web.SubmitEditFormAsync(torrentId, editPageUrl, patchData);
         Console.WriteLine(
             $"Patch response: {(int)patchResp.StatusCode} {patchResp.StatusCode} -> {patchResp.Headers.Location}");
+    }
+
+    private static string LayeredHtmlDecode(string formValue)
+    {
+        string decodedFormValue;
+        while ((decodedFormValue = HttpUtility.HtmlDecode(formValue)) != formValue)
+            formValue = decodedFormValue;
+        return formValue;
     }
 
     private static readonly HashSet<string> KnownAlignValues =
