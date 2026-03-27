@@ -35,6 +35,7 @@ internal sealed class ImageRehoster(HttpClient client, AppConfig config)
             Console.WriteLine("    Converting SVG to PNG...");
             uploadStream = ConvertSvgToPng(rawStream);
             fileName = Path.ChangeExtension(fileName, ".png");
+            contentType = "image/png";
         }
         else
         {
@@ -43,10 +44,12 @@ internal sealed class ImageRehoster(HttpClient client, AppConfig config)
 
         var uploadReq = new HttpRequestMessage(HttpMethod.Post, $"{config.ImageHostUrl}/upload");
         uploadReq.Headers.Authorization = new AuthenticationHeaderValue("Bearer", config.ImageHostApiKey);
+        var fileContent = new StreamContent(uploadStream);
+        fileContent.Headers.ContentType = new MediaTypeHeaderValue(contentType);
         uploadReq.Content = new MultipartFormDataContent
         {
-            { new StreamContent(uploadStream), "files[]", fileName },
-            { new StringContent("user"), "source_type" },
+            { fileContent, "files[]", fileName },
+            { new StringContent("user"), "source_type" }
         };
 
         var resp = await client.SendAsync(uploadReq);
