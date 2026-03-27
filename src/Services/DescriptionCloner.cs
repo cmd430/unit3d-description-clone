@@ -92,8 +92,41 @@ internal sealed class DescriptionCloner(
 
         StripLines(description);
 
+        var oldTargetDescription = targetTorrent.Attributes.Description ?? "";
+
+        // don't ask
+        description = description.Replace("h:m:s", "h:​m:s");
+
+        description = description.Replace("[hide", "[spoiler");
+        description = description.Replace("[/hide]", "[/spoiler]");
+
+        description = ReplaceAlignTags(description);
+
+        var wrappedSpoilerTag = "[spoiler=original info]";
+        string? originalDescriptionSpoiler = null;
+        if (oldTargetDescription.Contains(wrappedSpoilerTag, StringComparison.OrdinalIgnoreCase))
+        {
+            var lastEndTagIndex = oldTargetDescription.LastIndexOf("[/spoiler]", StringComparison.OrdinalIgnoreCase);
+            var startTagIndex = oldTargetDescription.LastIndexOf(wrappedSpoilerTag, lastEndTagIndex, StringComparison.OrdinalIgnoreCase);
+            if (startTagIndex >= 0 && lastEndTagIndex > startTagIndex)
+            {
+                var removeLength = lastEndTagIndex + "[/spoiler]".Length - startTagIndex;
+                originalDescriptionSpoiler = oldTargetDescription.Substring(startTagIndex, removeLength);
+                oldTargetDescription = oldTargetDescription.Remove(startTagIndex, removeLength);
+            }
+        }
+        else if (!string.IsNullOrWhiteSpace(oldTargetDescription))
+            originalDescriptionSpoiler = $"{wrappedSpoilerTag}{oldTargetDescription}[/spoiler]";
+
+
+        description.Insert(0, "[code]");
+        description.Append("[/code]");
+
         if (!skipRehosting && !await RehostImagesAsync(description))
             return;
+
+        if (originalDescriptionSpoiler is not null)
+            description.Append(originalDescriptionSpoiler);
 
         if (skipRehosting)
             Console.WriteLine("Skipping image rehosting (--no-rehost).");
@@ -101,7 +134,7 @@ internal sealed class DescriptionCloner(
         AppendDescriptionSuffix(description);
 
         await web.EnsureLoggedInAsync();
-        await SubmitEditAsync(torrentId, description.ToString(), mediaInfo, targetTorrent.Attributes.Description);
+        await SubmitEditAsync(torrentId, description.ToString(), mediaInfo);
     }
 
     private void StripLines(StringBuilder description)
@@ -187,40 +220,15 @@ internal sealed class DescriptionCloner(
         description.Append(config.DescriptionAppend);
     }
 
-    private async Task SubmitEditAsync(string torrentId, string description, string? mediaInfo, string oldTargetDescription)
+    private async Task SubmitEditAsync(string torrentId, string description, string? mediaInfo)
     {
         var editPageUrl = $"{config.ToTrackerUrl}/torrents/{torrentId}/edit";
         Console.WriteLine($"Fetching edit page for torrent {torrentId}...");
         var editHtml = await web.GetEditPageHtmlAsync(torrentId);
         var editForm = Unit3dWebClient.ParseEditPage(editHtml);
 
-        // don't ask
-        description = description.Replace("h:m:s", "h:​m:s", StringComparison.OrdinalIgnoreCase);
+        editForm.Fields["description"] = description;
 
-        description = description.Replace("[hide", "[spoiler", StringComparison.OrdinalIgnoreCase);
-        description = description.Replace("[/hide]", "[/spoiler]", StringComparison.OrdinalIgnoreCase);
-
-        description = ReplaceAlignTags(description);
-
-        var wrappedSpoilerTag = "[spoiler=original info]";
-        string? originalDescriptionSpoiler = null;
-        if (oldTargetDescription.Contains(wrappedSpoilerTag, StringComparison.OrdinalIgnoreCase))
-        {
-            var lastEndTagIndex = oldTargetDescription.LastIndexOf("[/spoiler]", StringComparison.OrdinalIgnoreCase);
-            var startTagIndex = oldTargetDescription.LastIndexOf(wrappedSpoilerTag, lastEndTagIndex, StringComparison.OrdinalIgnoreCase);
-            if (startTagIndex >= 0 && lastEndTagIndex > startTagIndex)
-            {
-                var removeLength = lastEndTagIndex + "[/spoiler]".Length - startTagIndex;
-                originalDescriptionSpoiler = oldTargetDescription.Substring(startTagIndex, removeLength);
-                oldTargetDescription = oldTargetDescription.Remove(startTagIndex, removeLength);
-            }
-        }
-        else if (!string.IsNullOrWhiteSpace(oldTargetDescription))
-            originalDescriptionSpoiler = $"{wrappedSpoilerTag}{oldTargetDescription}[/spoiler]";
-
-        editForm.Fields["description"] = $"[code]{description}[/code]";
-        if (originalDescriptionSpoiler is not null)
-            editForm.Fields["description"] += originalDescriptionSpoiler;
         if (!string.IsNullOrEmpty(mediaInfo) &&
             string.IsNullOrWhiteSpace(editForm.Fields.GetValueOrDefault("mediainfo")))
             editForm.Fields["mediainfo"] = mediaInfo;
@@ -259,10 +267,10 @@ internal sealed class DescriptionCloner(
     private static readonly HashSet<string> KnownAlignValues =
         new(StringComparer.OrdinalIgnoreCase) { "left", "center", "right" };
 
-    private static string ReplaceAlignTags(string text)
+    private static StringBuilder ReplaceAlignTags(StringBuilder text)
     {
         var tagRegex = new Regex(@"\[align=(?<val>[^\]]+)\]|\[/align\]", RegexOptions.IgnoreCase);
-        var matches = tagRegex.Matches(text);
+        var matches = tagRegex.Matches(text.ToString());
         var stack = new Stack<(int Index, int Length, string Value)>();
         var replacements = new List<(int Index, int Length, string Replacement)>();
 
@@ -287,13 +295,12 @@ internal sealed class DescriptionCloner(
         if (replacements.Count == 0)
             return text;
 
-        var sb = new StringBuilder(text);
         foreach (var (index, length, replacement) in replacements.OrderByDescending(r => r.Index))
         {
-            sb.Remove(index, length);
-            sb.Insert(index, replacement);
+            text.Remove(index, length);
+            text.Insert(index, replacement);
         }
-        return sb.ToString();
+        return text;
     }
 
     private static void RemoveNonExistentExternalIds(
