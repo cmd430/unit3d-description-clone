@@ -211,7 +211,8 @@ internal sealed class DescriptionCloner(
             {
                 description.Replace(imgUrl, newUrl + $"?variant=thumb");
                 description.Replace(hrefUrl, newUrl);
-            } else
+            } 
+            else
             {
                 description.Replace(imgUrl, newUrl);
             }
