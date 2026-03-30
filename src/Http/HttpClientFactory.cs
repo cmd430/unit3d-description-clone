@@ -15,10 +15,10 @@ internal static class HttpClientFactory
             AllowAutoRedirect = followRedirects,
             AutomaticDecompression = DecompressionMethods.All,
             MaxAutomaticRedirections = 10,
-            ConnectTimeout = TimeSpan.FromSeconds(15),
+            ConnectTimeout = TimeSpan.FromSeconds(30),
         };
 
-        var client = new HttpClient(handler) { Timeout = TimeSpan.FromSeconds(15) };
+        var client = new HttpClient(handler) { Timeout = TimeSpan.FromSeconds(30) };
         client.DefaultRequestHeaders.UserAgent.ParseAdd(UserAgent);
         return client;
     }
