@@ -62,7 +62,17 @@ internal sealed class ImageRehoster(HttpClient client, AppConfig config)
 
     public async Task<(bool IsImage, string ImageUrl)> GetImageFromHref(string imageUrl)
     {
-        if (imageUrl.Contains("imgbox", StringComparison.OrdinalIgnoreCase))
+        if (imageUrl.Contains("ibb.co", StringComparison.OrdinalIgnoreCase))
+        {
+            var resp = await FetchWithRetryAsync(imageUrl);
+            var content = await resp!.Content.ReadAsStringAsync();
+            var doc = new HtmlAgilityPack.HtmlDocument();
+            doc.LoadHtml(content);
+            var img = doc.DocumentNode.SelectSingleNode("//meta[@property='og:image']");
+            var src = img?.GetAttributeValue("content", null);
+            return (src is not null, src ?? "");
+        }
+        else if (imageUrl.Contains("imgbox", StringComparison.OrdinalIgnoreCase))
         {
             var resp = await FetchWithRetryAsync(imageUrl);
             var content = await resp!.Content.ReadAsStringAsync();
