@@ -209,7 +209,7 @@ internal sealed class DescriptionCloner(
 
             if (hrefUrl is not null)
             {
-                description.Replace("[url=" + hrefUrl + "]", "[url=" + newUrl + "]");
+                ReplaceIgnoreCase(description, "[url=" + hrefUrl + "]", "[url=" + newUrl + "]");
                 description.Replace(imgUrl, newUrl + $"?variant=thumb");
             } 
             else
@@ -272,6 +272,14 @@ internal sealed class DescriptionCloner(
         var patchResp = await web.SubmitEditFormAsync(torrentId, editPageUrl, patchData);
         Console.WriteLine(
             $"Patch response: {(int)patchResp.StatusCode} {patchResp.StatusCode} -> {patchResp.Headers.Location}");
+    }
+
+    private static StringBuilder ReplaceIgnoreCase(StringBuilder sb, string oldValue, string newValue)
+    {
+        var result = Regex.Replace(sb.ToString(), Regex.Escape(oldValue), _ => newValue, RegexOptions.IgnoreCase);
+        sb.Clear();
+        sb.Append(result);
+        return sb;
     }
 
     private static string LayeredHtmlDecode(string formValue)
