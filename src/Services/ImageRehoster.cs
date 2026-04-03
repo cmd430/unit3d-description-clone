@@ -5,11 +5,17 @@ using Unit3dDescriptionClone.Serialization;
 
 namespace Unit3dDescriptionClone.Services;
 
+internal sealed class RehostedImage(string FullRes, string? Thumb = null)
+{
+    public readonly string Full = FullRes;
+    public readonly string Thumbnail = Thumb is not null ? Thumb : FullRes;
+}
+
 internal sealed class ImageRehoster(HttpClient client, AppConfig config)
 {
     private const int FetchRetries = 2;
 
-    public async Task<string?> RehostAsync(string imageUrl)
+    public async Task<RehostedImage?> RehostAsync(string imageUrl)
     {
         Console.WriteLine($"  Rehosting: {imageUrl}");
 
@@ -19,7 +25,8 @@ internal sealed class ImageRehoster(HttpClient client, AppConfig config)
             if (!string.IsNullOrEmpty(config.ImageHostPlaceholder))
             {
                 Console.WriteLine($"    Using placeholder image: {config.ImageHostPlaceholder}");
-                return config.ImageHostPlaceholder;
+
+                return new RehostedImage(config.ImageHostPlaceholder);
             }
             return null;
         }
@@ -55,9 +62,11 @@ internal sealed class ImageRehoster(HttpClient client, AppConfig config)
         var resp = await client.SendAsync(uploadReq);
         resp.EnsureSuccessStatusCode();
         var result = await resp.Content.ReadFromJsonAsync(AppJsonContext.Default.UploadResponse);
-        var newUrl = result!.Files[0].Url;
-        Console.WriteLine($"    -> {newUrl}");
-        return newUrl;
+        var newFullUrl = result!.Files[0].Url;
+        var newThumbnailUrl = result!.Files[0].Thumbnail_url;
+        Console.WriteLine($"    -> {newFullUrl}");
+        Console.WriteLine($"    -> {newThumbnailUrl}");
+        return new RehostedImage(newFullUrl, newThumbnailUrl);
     }
 
     public async Task<(bool IsImage, string ImageUrl)> GetImageFromHref(string imageUrl)

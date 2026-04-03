@@ -8,4 +8,5 @@ internal sealed class UploadResponse
 internal sealed class UploadFile
 {
     public required string Url { get; set; }
+    public required string Thumbnail_url { get; set; }
 }
