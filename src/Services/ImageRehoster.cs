@@ -1,15 +1,10 @@
 using System.Net.Http.Headers;
 using System.Net.Http.Json;
 using Unit3dDescriptionClone.Config;
+using Unit3dDescriptionClone.Models;
 using Unit3dDescriptionClone.Serialization;
 
 namespace Unit3dDescriptionClone.Services;
-
-internal sealed class RehostedImage(string FullRes, string? Thumb = null)
-{
-    public readonly string Full = FullRes;
-    public readonly string Thumbnail = Thumb is not null ? Thumb : FullRes;
-}
 
 internal sealed class ImageRehoster(HttpClient client, AppConfig config)
 {
@@ -26,7 +21,11 @@ internal sealed class ImageRehoster(HttpClient client, AppConfig config)
             {
                 Console.WriteLine($"    Using placeholder image: {config.ImageHostPlaceholder}");
 
-                return new RehostedImage(config.ImageHostPlaceholder);
+                return new RehostedImage() 
+                { 
+                    Full = config.ImageHostPlaceholder, 
+                    Thumbnail = config.ImageHostPlaceholder
+                };
             }
             return null;
         }
@@ -66,7 +65,11 @@ internal sealed class ImageRehoster(HttpClient client, AppConfig config)
         var newThumbnailUrl = result!.Files[0].Thumbnail_url;
         Console.WriteLine($"    -> {newFullUrl}");
         Console.WriteLine($"    -> {newThumbnailUrl}");
-        return new RehostedImage(newFullUrl, newThumbnailUrl);
+        return new RehostedImage()
+        {
+            Full = newFullUrl, 
+            Thumbnail = newThumbnailUrl
+        };
     }
 
     public async Task<(bool IsImage, string ImageUrl)> GetImageFromHref(string imageUrl)
