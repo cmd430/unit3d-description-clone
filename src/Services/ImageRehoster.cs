@@ -1,6 +1,7 @@
 using System.Net.Http.Headers;
 using System.Net.Http.Json;
 using Unit3dDescriptionClone.Config;
+using Unit3dDescriptionClone.Models;
 using Unit3dDescriptionClone.Serialization;
 
 namespace Unit3dDescriptionClone.Services;
@@ -9,7 +10,7 @@ internal sealed class ImageRehoster(HttpClient client, AppConfig config)
 {
     private const int FetchRetries = 2;
 
-    public async Task<string?> RehostAsync(string imageUrl)
+    public async Task<RehostedImage?> RehostAsync(string imageUrl)
     {
         Console.WriteLine($"  Rehosting: {imageUrl}");
 
@@ -19,7 +20,12 @@ internal sealed class ImageRehoster(HttpClient client, AppConfig config)
             if (!string.IsNullOrEmpty(config.ImageHostPlaceholder))
             {
                 Console.WriteLine($"    Using placeholder image: {config.ImageHostPlaceholder}");
-                return config.ImageHostPlaceholder;
+
+                return new RehostedImage() 
+                { 
+                    Full = config.ImageHostPlaceholder, 
+                    Thumbnail = config.ImageHostPlaceholder
+                };
             }
             return null;
         }
@@ -49,15 +55,21 @@ internal sealed class ImageRehoster(HttpClient client, AppConfig config)
         uploadReq.Content = new MultipartFormDataContent
         {
             { fileContent, "files[]", fileName },
-            { new StringContent("user"), "source_type" }
+            { new StringContent("description"), "source_type" }
         };
 
         var resp = await client.SendAsync(uploadReq);
         resp.EnsureSuccessStatusCode();
         var result = await resp.Content.ReadFromJsonAsync(AppJsonContext.Default.UploadResponse);
-        var newUrl = result!.Files[0].Url;
-        Console.WriteLine($"    -> {newUrl}");
-        return newUrl;
+        var newFullUrl = result!.Files[0].Url;
+        var newThumbnailUrl = result!.Files[0].Thumbnail_url;
+        Console.WriteLine($"    -> {newFullUrl}");
+        Console.WriteLine($"    -> {newThumbnailUrl}");
+        return new RehostedImage()
+        {
+            Full = newFullUrl, 
+            Thumbnail = newThumbnailUrl
+        };
     }
 
     public async Task<(bool IsImage, string ImageUrl)> GetImageFromHref(string imageUrl)

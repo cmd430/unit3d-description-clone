@@ -192,7 +192,7 @@ internal sealed class DescriptionCloner(
         {
             if (config.KnownImages.TryGetValue(imgUrl, out var knownUrl))
             {
-                Console.WriteLine($"  Skipping (known): {imgUrl} -> {knownUrl}");
+                Console.WriteLine($"  Skipping (known): {imgUrl}\n    -> {knownUrl}");
                 description.Replace(imgUrl, knownUrl);
                 if (hrefUrl is not null && hrefUrl != imgUrl)
                     description.Replace(hrefUrl, knownUrl);
@@ -207,18 +207,18 @@ internal sealed class DescriptionCloner(
                     fetchUrl = hrefImageUrl;
             }
 
-            var newUrl = await imageRehoster.RehostAsync(fetchUrl);
-            if (newUrl is null)
+            var newImageUrls = await imageRehoster.RehostAsync(fetchUrl);
+            if (newImageUrls is null)
                 return false;
 
             if (hrefUrl is not null)
             {
-                ReplaceIgnoreCase(description, "[url=" + hrefUrl + "]", "[url=" + newUrl + "]");
-                description.Replace(imgUrl, newUrl + $"?variant=thumb");
+                ReplaceIgnoreCase(description, "[url=" + hrefUrl + "]", "[url=" + newImageUrls.Full + "]");
+                description.Replace(imgUrl, newImageUrls.Thumbnail);
             } 
             else
             {
-                description.Replace(imgUrl, newUrl);
+                description.Replace(imgUrl, newImageUrls.Full);
             }
         }
 
