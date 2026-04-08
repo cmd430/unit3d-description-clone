@@ -1,4 +1,5 @@
 using System.Text.Json.Serialization;
+using Unit3dDescriptionClone.Serialization;
 
 namespace Unit3dDescriptionClone.Models;
 
@@ -14,6 +15,7 @@ internal sealed class TorrentAttributes
     public string Description { get; set; } = "";
 
     [JsonPropertyName("tmdb_id")]
+    [JsonConverter(typeof(NullableIntFromStringConverter))]
     public int? TmdbId { get; set; }
 
     [JsonPropertyName("media_info")]

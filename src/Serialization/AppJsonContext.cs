@@ -3,7 +3,7 @@ using Unit3dDescriptionClone.Models;
 
 namespace Unit3dDescriptionClone.Serialization;
 
-[JsonSourceGenerationOptions(WriteIndented = true, PropertyNameCaseInsensitive = true)]
+[JsonSourceGenerationOptions(WriteIndented = true, PropertyNameCaseInsensitive = true, Converters = [typeof(NullableIntFromStringConverter)])]
 [JsonSerializable(typeof(List<CookieData>))]
 [JsonSerializable(typeof(TorrentInfo))]
 [JsonSerializable(typeof(TorrentsResponse))]
