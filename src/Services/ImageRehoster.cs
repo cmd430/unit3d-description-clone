@@ -74,7 +74,9 @@ internal sealed class ImageRehoster(HttpClient client, AppConfig config)
 
     public async Task<(bool IsImage, string ImageUrl)> GetImageFromHref(string imageUrl)
     {
-        if (imageUrl.Contains("ibb.co", StringComparison.OrdinalIgnoreCase))
+        if (imageUrl.Contains("ibb.co", StringComparison.OrdinalIgnoreCase)
+            || (imageUrl.Contains("beyondhd.co/image", StringComparison.OrdinalIgnoreCase)
+                && !imageUrl.Contains("beyondhd.co/images", StringComparison.OrdinalIgnoreCase)))
         {
             var resp = await FetchWithRetryAsync(imageUrl);
             var content = await resp!.Content.ReadAsStringAsync();
